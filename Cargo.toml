@@ -1,0 +1,34 @@
+[package]
+name = "rusty-wroom"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+
+[[bin]]
+name = "rusty-wroom"
+path = "./src/bin/main.rs"
+
+[dependencies]
+# The HAL: GPIO, clocks, timers, etc. The "esp32" feature selects the chip.
+esp-hal = { version = "~1.2.2", features = ["esp32"] }
+
+# Provides the app descriptor the ESP-IDF 2nd-stage bootloader expects.
+esp-bootloader-esp-idf = { version = "0.6.0", features = ["esp32"] }
+
+# println! over the UART that espflash's monitor shows.
+esp-println = { version = "0.18.0", features = ["esp32"] }
+
+# Panic handler that prints a backtrace via esp-println.
+esp-backtrace = { version = "0.20.0", features = ["esp32", "panic-handler", "println"] }
+
+critical-section = "1.2.0"
+
+[profile.dev]
+# Unoptimized embedded code is huge and slow; always optimize a bit.
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1
+debug = 2
+lto = "fat"
+opt-level = "s"
