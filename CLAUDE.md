@@ -26,23 +26,25 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
 ## Approach and stack
 - Bare-metal `no_std` / `no_main` (chosen over std/ESP-IDF to avoid the C SDK and Windows long-path issues).
 - Crates:
-  - `esp-hal` ~1.2.2 (feature `esp32`): HAL. Only **stable** APIs are used; `unstable` feature is NOT enabled (e.g. `esp_hal::delay::Delay` is unstable, so a busy-wait on `time::Instant` is used instead).
+  - `esp-hal` ~1.2.2 (features `esp32`, `unstable`): HAL. `unstable` is needed for LEDC (PWM); it also unlocks e.g. `esp_hal::delay::Delay`. Blocking examples still use a busy-wait on `time::Instant`.
+  - `embedded-hal` 1.0: chip-independent traits (e.g. `pwm::SetDutyCycle` for fine-grained duty).
   - `esp-bootloader-esp-idf` 0.6: `esp_app_desc!()` app descriptor required by the bootloader.
   - `esp-println` 0.18: `println!` over UART.
   - `esp-backtrace` 0.20 (`panic-handler`, `println`): panic handler.
 - Edition 2024.
 
 ## Layout
-- `Cargo.toml`: deps and profiles (dev uses `opt-level = "s"`; release uses fat LTO).
+- `Cargo.toml`: package `rusty-wroom`; deps and profiles. Every `src/bin/*.rs` is auto-discovered as a binary named after the file. Dev profile uses `opt-level = "s"`; release uses fat LTO.
 - `rust-toolchain.toml`: `channel = "esp"`.
 - `.cargo/config.toml`: target `xtensa-esp32-none-elf`, `build-std = ["core"]`, `-nostartfiles`, runner `espflash flash --monitor --chip esp32 --port COM4`.
 - `.cargo/esp-config.toml`: esp-hal build-time config env vars (sets the minimum chip revision).
 - `build.rs`: adds `-Tlinkall.x` linker script.
-- `src/bin/main.rs`: init clocks/peripherals, `Output::new(peripherals.GPIO2, ...)`, toggle every 500 ms, print state.
+- `src/bin/blinky.rs` (bin `blinky`): blocking blinky, toggles GPIO2 every 500 ms, prints state.
+- `src/bin/pwm_fade.rs` (bin `pwm_fade`): LEDC low-speed timer 5 kHz / 13-bit, channel 0 on GPIO2, squared (gamma) fade in/out over 1 s each.
 
 ## Commands
 - Build: `cargo build --release`
-- Build + flash + serial monitor: `cargo run --release`
+- Build + flash + serial monitor: `cargo run --release --bin <name>` (`--bin` is required now that there are several binaries)
 - Exit monitor: Ctrl+C
 
 ## References
@@ -51,7 +53,9 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
 - Project generator (for comparing with official templates): `esp-generate`
 
 ## Roadmap
-Done: blocking blinky builds, flashes and runs on the board.
+Done: blocking blinky; blocking PWM fade (`pwm_fade`).
+
+Order changed: PWM was done first (blocking); step 3 below now means adding button control to it.
 
 Each experiment gets its own binary in `src/bin/` (run with `cargo run --release --bin <name>`) so earlier steps stay runnable. Use `esp-generate` output or esp-hal examples to pick crate versions matching esp-hal 1.2.
 

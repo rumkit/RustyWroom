@@ -4,13 +4,13 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.95"
 
-[[bin]]
-name = "rusty-wroom"
-path = "./src/bin/main.rs"
-
 [dependencies]
 # The HAL: GPIO, clocks, timers, etc. The "esp32" feature selects the chip.
-esp-hal = { version = "~1.2.2", features = ["esp32"] }
+# "unstable" unlocks drivers whose API may still change, e.g. LEDC (PWM).
+esp-hal = { version = "~1.2.2", features = ["esp32", "unstable"] }
+
+# Chip-independent hardware traits; esp-hal implements them (e.g. SetDutyCycle).
+embedded-hal = "1.0.0"
 
 # Provides the app descriptor the ESP-IDF 2nd-stage bootloader expects.
 esp-bootloader-esp-idf = { version = "0.6.0", features = ["esp32"] }
