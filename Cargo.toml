@@ -23,6 +23,9 @@ embassy-executor = "0.10.0"
 # Async timers: Timer::after(...).await.
 embassy-time = "0.5.1"
 
+# Safe one-time initialization of a `static`, yielding a &'static mut to it.
+static_cell = "2.1.1"
+
 # Provides the app descriptor the ESP-IDF 2nd-stage bootloader expects.
 esp-bootloader-esp-idf = { version = "0.6.0", features = ["esp32"] }
 
