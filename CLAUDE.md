@@ -31,6 +31,7 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
   - `esp-rtos` 0.4 (features `esp32`, `embassy`): async runtime; `#[esp_rtos::main]`, started with `esp_rtos::start(timg0.timer0, peripherals.FROM_CPU_INTR0)`.
   - `embassy-executor` 0.10 (no `arch-*` feature; esp-rtos provides the executor) and `embassy-time` 0.5 (`Timer::after(...).await`).
   - `static_cell` 2.1: one-time init of statics, used to give spawned tasks `'static` data.
+  - `embassy-sync` 0.8 (same version esp-hal uses): inter-task primitives; `Watch` for the current fade speed.
   - `esp-bootloader-esp-idf` 0.6: `esp_app_desc!()` app descriptor required by the bootloader.
   - `esp-println` 0.18: `println!` over UART.
   - `esp-backtrace` 0.20 (`panic-handler`, `println`): panic handler.
@@ -45,6 +46,7 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
 - `src/bin/blinky.rs` (bin `blinky`): blocking blinky, toggles GPIO2 every 500 ms, prints state.
 - `src/bin/pwm_fade.rs` (bin `pwm_fade`): LEDC low-speed timer 5 kHz / 13-bit, channel 0 on GPIO2, squared (gamma) fade in/out over 1 s each.
 - `src/bin/embassy_fade.rs` (bin `embassy_fade`): same fade, but async under esp-rtos; `Timer::after(...).await` instead of busy-wait. The fade runs in a spawned `#[embassy_executor::task]`; the LEDC timer lives in a `StaticCell` so the channel is `'static`. `main` prints a heartbeat every 5 s.
+- `src/bin/button_fade.rs` (bin `button_fade`): BOOT button (GPIO0) cycles fade speed Slow/Medium/Fast (4 s / 2 s / 0.5 s cycle). Three tasks: `button_task` (edge wait + 50 ms debounce, waits for release) sends to a `static SPEED: Watch<_, Speed, 2>`; `fade` polls `try_changed()` each step (only step time changes, so brightness does not jump); `main` awaits `changed()` and prints. Note: `Watch::new_with` initial value is not reported by `changed()`; use `get()`.
 
 ## Commands
 - Build: `cargo build --release`
@@ -57,7 +59,7 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
 - Project generator (for comparing with official templates): `esp-generate`
 
 ## Roadmap
-Done: blocking blinky; blocking PWM fade (`pwm_fade`); async PWM fade (`embassy_fade`, step 1).
+Done: blocking blinky; blocking PWM fade (`pwm_fade`); async PWM fade (`embassy_fade`, step 1); button cycles fade speed (`button_fade`, replaces step 2).
 
 Order changed: PWM was done first (blocking); step 3 below now means adding button control to it.
 

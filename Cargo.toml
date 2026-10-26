@@ -26,6 +26,10 @@ embassy-time = "0.5.1"
 # Safe one-time initialization of a `static`, yielding a &'static mut to it.
 static_cell = "2.1.1"
 
+# Heap-free primitives for talking between tasks (Watch, Signal, Channel...).
+# Same version esp-hal uses, so only one copy gets compiled.
+embassy-sync = "0.8.0"
+
 # Provides the app descriptor the ESP-IDF 2nd-stage bootloader expects.
 esp-bootloader-esp-idf = { version = "0.6.0", features = ["esp32"] }
 
