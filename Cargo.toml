@@ -12,6 +12,17 @@ esp-hal = { version = "~1.2.2", features = ["esp32", "unstable"] }
 # Chip-independent hardware traits; esp-hal implements them (e.g. SetDutyCycle).
 embedded-hal = "1.0.0"
 
+# Runtime for async code: runs the Embassy executor and drives embassy-time
+# from a hardware timer. Provides the #[esp_rtos::main] entry point.
+esp-rtos = { version = "0.4.0", features = ["esp32", "embassy"] }
+
+# The async executor's task macro and Spawner (esp-rtos supplies the executor
+# itself, so no arch-* feature here).
+embassy-executor = "0.10.0"
+
+# Async timers: Timer::after(...).await.
+embassy-time = "0.5.1"
+
 # Provides the app descriptor the ESP-IDF 2nd-stage bootloader expects.
 esp-bootloader-esp-idf = { version = "0.6.0", features = ["esp32"] }
 

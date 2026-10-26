@@ -28,6 +28,8 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
 - Crates:
   - `esp-hal` ~1.2.2 (features `esp32`, `unstable`): HAL. `unstable` is needed for LEDC (PWM); it also unlocks e.g. `esp_hal::delay::Delay`. Blocking examples still use a busy-wait on `time::Instant`.
   - `embedded-hal` 1.0: chip-independent traits (e.g. `pwm::SetDutyCycle` for fine-grained duty).
+  - `esp-rtos` 0.4 (features `esp32`, `embassy`): async runtime; `#[esp_rtos::main]`, started with `esp_rtos::start(timg0.timer0, peripherals.FROM_CPU_INTR0)`.
+  - `embassy-executor` 0.10 (no `arch-*` feature; esp-rtos provides the executor) and `embassy-time` 0.5 (`Timer::after(...).await`).
   - `esp-bootloader-esp-idf` 0.6: `esp_app_desc!()` app descriptor required by the bootloader.
   - `esp-println` 0.18: `println!` over UART.
   - `esp-backtrace` 0.20 (`panic-handler`, `println`): panic handler.
@@ -41,6 +43,7 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
 - `build.rs`: adds `-Tlinkall.x` linker script.
 - `src/bin/blinky.rs` (bin `blinky`): blocking blinky, toggles GPIO2 every 500 ms, prints state.
 - `src/bin/pwm_fade.rs` (bin `pwm_fade`): LEDC low-speed timer 5 kHz / 13-bit, channel 0 on GPIO2, squared (gamma) fade in/out over 1 s each.
+- `src/bin/embassy_fade.rs` (bin `embassy_fade`): same fade, but async under esp-rtos; `Timer::after(...).await` instead of busy-wait. Fade loop stays in `main` (the LEDC channel borrows locals, so it is not `'static` and cannot be passed to a spawned task yet).
 
 ## Commands
 - Build: `cargo build --release`
@@ -53,15 +56,14 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
 - Project generator (for comparing with official templates): `esp-generate`
 
 ## Roadmap
-Done: blocking blinky; blocking PWM fade (`pwm_fade`).
+Done: blocking blinky; blocking PWM fade (`pwm_fade`); async PWM fade (`embassy_fade`, step 1).
 
 Order changed: PWM was done first (blocking); step 3 below now means adding button control to it.
 
 Each experiment gets its own binary in `src/bin/` (run with `cargo run --release --bin <name>`) so earlier steps stay runnable. Use `esp-generate` output or esp-hal examples to pick crate versions matching esp-hal 1.2.
 
-1. **Embassy blinky** (`embassy_blinky`): same 500 ms blink, async.
-   - Add `esp-rtos` (feature `embassy`), `embassy-executor`, `embassy-time`. Likely requires enabling esp-hal `unstable`.
-   - Start the time driver from a TIMG timer, `#[esp_rtos::main] async fn main(spawner: Spawner)`, blink in a spawned `#[embassy_executor::task]` with `Timer::after(...).await`.
+1. ~~**Embassy blinky**~~ done as `embassy_fade` (the PWM fade, async).
+   - Next refinement: move the fade into a spawned `#[embassy_executor::task]`; needs a `'static` LEDC channel (e.g. `static_cell`).
    - Concepts: executor/tasks vs .NET Task/async state machines, why tasks need `'static` args, no heap.
 2. **Button changes blink frequency** (`button_blink`):
    - BOOT button = GPIO0, active low (pressed = Low), `Input` with pull-up.
