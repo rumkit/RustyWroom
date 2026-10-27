@@ -10,4 +10,5 @@ target = "xtensa-esp32-none-elf"
 
 [unstable]
 # core is not shipped prebuilt for Xtensa, so it is compiled from source.
-build-std = ["core"]
+# alloc (Vec, Box, String...) too: the WiFi driver needs a heap.
+build-std = ["alloc", "core"]

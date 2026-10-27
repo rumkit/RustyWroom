@@ -14,7 +14,16 @@ embedded-hal = "1.0.0"
 
 # Runtime for async code: runs the Embassy executor and drives embassy-time
 # from a hardware timer. Provides the #[esp_rtos::main] entry point.
-esp-rtos = { version = "0.4.0", features = ["esp32", "embassy"] }
+# "esp-radio" + "esp-alloc": also provide the threads/queues/heap the WiFi
+# driver needs.
+esp-rtos = { version = "0.4.0", features = ["esp32", "embassy", "esp-radio", "esp-alloc"] }
+
+# WiFi/BLE driver (wraps Espressif's precompiled radio firmware blobs).
+esp-radio = { version = "1.0.0-beta.1", features = ["esp32", "wifi"] }
+
+# Heap allocator: the WiFi driver allocates buffers at runtime, so unlike the
+# earlier examples this one needs a heap.
+esp-alloc = { version = "0.11.0", features = ["esp32"] }
 
 # The async executor's task macro and Spawner (esp-rtos supplies the executor
 # itself, so no arch-* feature here).
@@ -50,3 +59,11 @@ codegen-units = 1
 debug = 2
 lto = "fat"
 opt-level = "s"
+
+# The radio driver needs opt-level 2 or 3, otherwise WiFi may fail to connect
+# (per the esp-radio docs). Everything else stays size-optimized.
+[profile.dev.package.esp-radio]
+opt-level = 3
+
+[profile.release.package.esp-radio]
+opt-level = 3
