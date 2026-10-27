@@ -25,12 +25,32 @@ esp-radio = { version = "1.0.0-beta.1", features = ["esp32", "wifi"] }
 # earlier examples this one needs a heap.
 esp-alloc = { version = "0.11.0", features = ["esp32"] }
 
+# TCP/IP stack (smoltcp underneath): IP, ARP, UDP and TCP sockets on top of
+# the WiFi interface. Only the protocol pieces we use are compiled in.
+embassy-net = { version = "0.9.1", features = ["proto-ipv4", "medium-ethernet", "tcp", "udp"] }
+
+# DHCP server, so a phone joining our access point gets an IP address.
+edge-dhcp = "0.8.0"
+# edge-dhcp talks to the network through edge-nal traits; edge-nal-embassy
+# implements them on top of embassy-net's UDP sockets.
+edge-nal = "0.7"
+# DNS server that answers every name with our own IP (captive portal).
+edge-captive = "0.8.0"
+edge-nal-embassy = { version = "0.9.0", default-features = false, features = ["proto-ipv4", "medium-ethernet", "udp"] }
+
 # The async executor's task macro and Spawner (esp-rtos supplies the executor
 # itself, so no arch-* feature here).
 embassy-executor = "0.10.0"
 
 # Async timers: Timer::after(...).await.
 embassy-time = "0.5.1"
+
+# Combinators for futures, e.g. select(a, b): wait for whichever finishes first.
+embassy-futures = "0.1.2"
+
+# Fixed-capacity collections (String<N>, Vec<T, N>) that live on the stack or
+# in statics instead of the heap.
+heapless = "0.9"
 
 # Safe one-time initialization of a `static`, yielding a &'static mut to it.
 static_cell = "2.1.1"

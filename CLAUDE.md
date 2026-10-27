@@ -23,7 +23,7 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
 
 ## Project status
 - Scaffolded by hand following the official `esp-generate` 1.4 template.
-- All binaries build cleanly and run on the board, including WiFi (`wifi_scan`) on the rev v1.0 chip.
+- All binaries build cleanly and run on the board, including WiFi (`wifi_scan`, `wifi_led`) on the rev v1.0 chip.
 
 ## Approach and stack
 - Bare-metal `no_std` / `no_main` (chosen over std/ESP-IDF to avoid the C SDK and Windows long-path issues).
@@ -36,6 +36,10 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
   - `embassy-sync` 0.8 (same version esp-hal uses): inter-task primitives; `Watch` for the current fade speed.
   - `esp-radio` 1.0.0-beta.1 (features `esp32`, `wifi`): WiFi driver. Needs opt-level >= 2, so `Cargo.toml` overrides `opt-level = 3` for the `esp-radio` package in both profiles.
   - `esp-alloc` 0.11: heap for the WiFi driver (`heap_allocator!` in the WiFi binaries only).
+  - `embassy-net` 0.9 (features `proto-ipv4`, `medium-ethernet`, `tcp`, `udp`): TCP/IP stack (smoltcp). `embassy_net::new` returns a `Stack` (Copy handle for opening sockets) and a `Runner` (needs its own task).
+  - `edge-dhcp` 0.8, `edge-captive` 0.8: DHCP server and catch-all captive-portal DNS. They use `edge-nal` 0.7 traits; `edge-nal-embassy` 0.9 (default features off; `proto-ipv4`, `medium-ethernet`, `udp`) adapts embassy-net UDP sockets to them.
+  - `embassy-futures` 0.1: `select` (wait for whichever future finishes first).
+  - `heapless` 0.9: fixed-capacity `String`/`Vec` without a heap.
   - `esp-bootloader-esp-idf` 0.6: `esp_app_desc!()` app descriptor required by the bootloader.
   - `esp-println` 0.18: `println!` over UART.
   - `esp-backtrace` 0.20 (`panic-handler`, `println`): panic handler.
@@ -52,6 +56,7 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
 - `src/bin/embassy_fade.rs` (bin `embassy_fade`): same fade, but async under esp-rtos; `Timer::after(...).await` instead of busy-wait. The fade runs in a spawned `#[embassy_executor::task]`; the LEDC timer lives in a `StaticCell` so the channel is `'static`. `main` prints a heartbeat every 5 s.
 - `src/bin/button_fade.rs` (bin `button_fade`): BOOT button (GPIO0) cycles fade speed Slow/Medium/Fast (4 s / 2 s / 0.5 s cycle). Three tasks: `button_task` (edge wait + 50 ms debounce, waits for release) sends to a `static SPEED: Watch<_, Speed, 2>`; `fade` polls `try_changed()` each step (only step time changes, so brightness does not jump); `main` awaits `changed()` and prints. Note: `Watch::new_with` initial value is not reported by `changed()`; use `get()`.
 - `src/bin/wifi_scan.rs` (bin `wifi_scan`): 64 KB reclaimed + 36 KB heap, esp-rtos, `WifiController::new` (starts station mode), `scan_async` every 10 s, prints networks sorted by RSSI. Flash image ~490 KB.
+- `src/bin/wifi_led.rs` (bin `wifi_led`): open access point "RustyWroom", static IP 192.168.4.1/24. Tasks: `net_task` (embassy-net runner), `dhcp_task` (edge-dhcp, leases .50-.200, advertises us as gateway + DNS), `dns_task` (edge-captive: every name resolves to us), `http_task` (`pool_size = 3`, hand-written HTTP/1.1, one request per connection), `led_task`. `static LED: Watch<_, LedState, 1>` (brightness 0-100 %, blink); HTTP tasks update it with `send_if_modified`, `led_task` uses `select(changed(), Timer)` to blink. Routes: `/` (page with slider + checkbox, JS keeps one request in flight), `/state` (JSON), `/set?b=..&blink=..` (GET on purpose: no body parsing), anything else 302 to the page, which makes phones show the captive-portal "sign in" prompt (on a Samsung S24 it can take a while to appear). `main` prints stations joining/leaving.
 
 ## Commands
 - Build: `cargo build --release`
@@ -64,7 +69,7 @@ Learning project: Rust on an ESP32 (WROOM-32 DevKit). A blocking blinky works; s
 - Project generator (for comparing with official templates): `esp-generate`
 
 ## Roadmap
-Done: blocking blinky; blocking PWM fade (`pwm_fade`); async PWM fade (`embassy_fade`, step 1); button cycles fade speed (`button_fade`, replaces step 2); WiFi scan (`wifi_scan`, step 4 stepping stone).
+Done: blocking blinky; blocking PWM fade (`pwm_fade`); async PWM fade (`embassy_fade`, step 1); button cycles fade speed (`button_fade`, replaces step 2); WiFi scan (`wifi_scan`, step 4 stepping stone); WiFi LED web remote with captive portal (`wifi_led`, step 4).
 
 Order changed: PWM was done first (blocking); step 3 below now means adding button control to it.
 
