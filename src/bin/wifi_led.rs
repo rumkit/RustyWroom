@@ -51,8 +51,10 @@ const PORTAL_URL: &str = "http://192.168.4.1/";
 /// second "spare" connection, which a single listener would refuse, and with
 /// the captive DNS the phone's own background requests land here too.
 const HTTP_TASKS: usize = 3;
-/// Every socket needs a slot in the stack: DHCP + DNS + the HTTP ones.
-const SOCKETS: usize = 2 + HTTP_TASKS;
+/// Every socket needs a slot in the stack: DHCP + DNS + the HTTP ones, plus
+/// one embassy-net reserves for its own DNS client (its "dns" feature is on
+/// for wifi_probe, and features are shared by all binaries).
+const SOCKETS: usize = 2 + HTTP_TASKS + 1;
 
 /// Time the LED stays on (and then off) while blinking.
 const BLINK_HALF_PERIOD: Duration = Duration::from_millis(250);

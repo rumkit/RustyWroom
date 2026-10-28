@@ -1,1 +1,3 @@
 target/
+# Local WiFi credentials etc. (template: .cargo/secrets.example.toml)
+.cargo/secrets.toml

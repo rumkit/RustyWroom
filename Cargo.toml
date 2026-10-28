@@ -26,8 +26,10 @@ esp-radio = { version = "1.0.0-beta.1", features = ["esp32", "wifi"] }
 esp-alloc = { version = "0.11.0", features = ["esp32"] }
 
 # TCP/IP stack (smoltcp underneath): IP, ARP, UDP and TCP sockets on top of
-# the WiFi interface. Only the protocol pieces we use are compiled in.
-embassy-net = { version = "0.9.1", features = ["proto-ipv4", "medium-ethernet", "tcp", "udp"] }
+# the WiFi interface. Only the protocol pieces we use are compiled in:
+# dhcpv4 (client), dns and icmp (ping) are for wifi_probe. Features apply to
+# every binary in the package, so wifi_led gets them too.
+embassy-net = { version = "0.9.1", features = ["proto-ipv4", "medium-ethernet", "tcp", "udp", "dhcpv4", "dns", "icmp"] }
 
 # DHCP server, so a phone joining our access point gets an IP address.
 edge-dhcp = "0.8.0"
@@ -51,6 +53,10 @@ embassy-futures = "0.1.2"
 # Fixed-capacity collections (String<N>, Vec<T, N>) that live on the stack or
 # in statics instead of the heap.
 heapless = "0.9"
+
+# Atomics with extra types/ops; esp-hal accepts its AtomicU32 in persistent
+# RTC memory (the wake counter in wifi_probe).
+portable-atomic = { version = "1.11", default-features = false }
 
 # Safe one-time initialization of a `static`, yielding a &'static mut to it.
 static_cell = "2.1.1"

@@ -1,4 +1,6 @@
-include = ["esp-config.toml"]
+# secrets.toml is git-ignored and optional, so the binaries that don't need
+# WiFi credentials still build without it (see secrets.example.toml).
+include = ["esp-config.toml", { path = "secrets.toml", optional = true }]
 
 [target.xtensa-esp32-none-elf]
 # `cargo run` builds, flashes over the serial port, then opens a serial monitor.
